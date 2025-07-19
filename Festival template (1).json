@@ -1,0 +1,846 @@
+{
+  "name": "Festival template",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1760,
+        -655
+      ],
+      "id": "d132c5b7-bfb8-4289-ad3d-4c7db48a3521",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "10Ole7R4ACzw9pRPH-7HJsX7D1V3-ltYnbMDp8FfY1KA",
+          "mode": "list",
+          "cachedResultName": "Festival -wishes-automation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10Ole7R4ACzw9pRPH-7HJsX7D1V3-ltYnbMDp8FfY1KA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10Ole7R4ACzw9pRPH-7HJsX7D1V3-ltYnbMDp8FfY1KA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1360,
+        -840
+      ],
+      "id": "c5f5413b-8b4d-4a13-be49-09c46cb8d287",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PiPXgtjfXU0dWqxG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assume input is the first item in an array, as in n8n's default structure\nconst item = items[0].json; // or just use 'input' if that's your variable\n\nconst dateObj = new Date(item.timestamp);\n\n// Get day, month, year dynamically\nconst day = dateObj.getDate();\nconst month = dateObj.toLocaleString('default', { month: 'long' });\nconst year = dateObj.getFullYear();\n\n// Format: \"15 August 2025\"\nconst formattedDate = `${day} ${month} ${year}`;\n\nreturn [{ json: { formattedDate } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1540,
+        -655
+      ],
+      "id": "995ca206-bcd0-48b2-9c3b-e514aa53a350",
+      "name": "Code1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1100,
+        -655
+      ],
+      "id": "a4d0a103-5515-46e5-9f8f-2a49d32943a3",
+      "name": "Merge",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM email_auto  where unsubscribe =false;\n\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -440,
+        -655
+      ],
+      "id": "c7aedab6-2ab4-47f8-ab9e-d1ef9c0f6cbf",
+      "name": "Execute a SQL query",
+      "executeOnce": false,
+      "credentials": {
+        "postgres": {
+          "id": "ZyRMP1sWboTlqwaP",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM campaigns_emailcampaign WHERE email = '{{ $json.client_email }}' ;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        220,
+        -455
+      ],
+      "id": "b0112d8f-7aae-4d02-815f-23bbd7b2cc3b",
+      "name": "Execute a SQL query1",
+      "executeOnce": false,
+      "credentials": {
+        "postgres": {
+          "id": "ZyRMP1sWboTlqwaP",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.allData }}",
+        "options": {
+          "systemMessage": "=You are an expert AI assistant.\n\nYou will receive a JSON object containing an array called allData.\n\nInstructions:\n\nExtract the following fields from each item in the input data (if present):\n\nname\n\nemail\n\nclient_name\n\nclient_email\n\nFestival\n\nDate\n\nDay\n\nFor each item, generate a JSON object for a festival greeting email in the following format:\n\njson\n{\n  \"subject\": \"Warm Wishes for [Festival] from [client_name]\",\n  \"body\": \"Dear <b>[name]</b>,<br>Wishing you a very happy and prosperous <b>[Festival]</b>! [iconic_emoji]<br><br>[A detailed, heartfelt description of the festival and its significance, including at least one relevant emoji different from the subject line.]<br>[A second unique, detailed description of the festival, its traditions, and cultural importance, with a different relevant emoji.]<br><br>May this occasion bring joy, peace, and success to you and your loved ones.<br><br><br>Thank you for being a valued part of our community.<br>best regards [client_name]\",\n}\nGuidelines:\n\nReplace [Festival], [name], [client_name], and [iconic_emoji] with the extracted data and a relevant, distinct emoji that represents the festival.\n\nFor each festival, use a different emoji in the subject, and ensure each of the two description sentences in the body uses a different, relevant emoji (not repeating the subject emoji or each other).\n\nIf the festival is not recognized, use three different general celebratory emojis (e.g., 🎉, 🎊, 🥳).\n\nMake each description sentence detailed, including the festival’s significance, key traditions, and cultural importance, using at least one relevant emoji per sentence.\n\nFor the festival_info field, provide a comprehensive, multi-paragraph summary about the festival, including its history, significance, customs, foods, and how it is celebrated.\n\nIf any field is missing, leave its place in the template blank (e.g., \"Warm Wishes for \").\n\nDo not hardcode any values; always use the input data for every field and for choosing emojis.\n\nOutput only the final JSON object as specified above.\n\nDo not include any explanation, extra text, or hardcoded content.\n\nOutput:\n\nOnly output the final JSON object for each item in the array.\n\nDo not include any additional text, comments, or formatting outside the JSON object."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -905
+      ],
+      "id": "a15666eb-7d22-499e-b917-d5b8270693a4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        -685
+      ],
+      "id": "28428bc8-9a75-4c39-9220-6b9c515da4cf",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "WAz8Obq1kWA3U8bi",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        660,
+        -905
+      ],
+      "id": "96a72caf-9b62-4103-a836-b4e19b61781c",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data from the previous node\nconst inputData = items.map(item => item.json);\n\n// Merge all objects into one\nconst merged = {};\n\ninputData.forEach(obj => {\n  Object.entries(obj).forEach(([key, value]) => {\n    // If the key already exists, add a suffix to keep all values\n    let newKey = key;\n    let i = 2;\n    while (merged.hasOwnProperty(newKey)) {\n      newKey = `${key}_${i++}`;\n    }\n    merged[newKey] = value;\n  });\n});\n\n// Add a uniqueKey property\nmerged.uniqueKey = \"key_\" + Date.now();\n\n// Wrap the merged object under a single key\nconst output = {\n  allData: merged\n};\n\n// Return as an array of one object with a 'json' property\nreturn [{ json: output }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -905
+      ],
+      "id": "b3eb1925-d2a3-486b-aad4-458c95b92673",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1900,
+        -805
+      ],
+      "id": "0ced6b8f-4149-41f1-a2aa-7efdbaa9494a",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data from the previous node\nconst inputData = items.map(item => item.json);\n\n// Merge all objects into one\nconst merged = {};\n\ninputData.forEach(obj => {\n  Object.entries(obj).forEach(([key, value]) => {\n    // If the key already exists, add a suffix to keep all values\n    let newKey = key;\n    let i = 2;\n    while (merged.hasOwnProperty(newKey)) {\n      newKey = `${key}_${i++}`;\n    }\n    merged[newKey] = value;\n  });\n});\n\n// Add a uniqueKey property\nmerged.uniqueKey = \"key_\" + Date.now();\n\n// Wrap the merged object under a single key\nconst output = {\n  allData: merged\n};\n\n// Return as an array of one object with a 'json' property\nreturn [{ json: output }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2120,
+        -805
+      ],
+      "id": "890e9643-195b-4b51-8bf0-59c7132d2ef0",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE email_auto\nSET festive_status = '{{ $json.allData.status }}'\nWHERE email = '{{ $json.allData.email }}';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3000,
+        -655
+      ],
+      "id": "4fef0c3b-d541-4b9e-9468-5c1b09b067fc",
+      "name": "Execute a SQL query4",
+      "credentials": {
+        "postgres": {
+          "id": "ZyRMP1sWboTlqwaP",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input data from the previous node\nconst inputData = items.map(item => item.json);\n\n// Merge all objects into one\nconst merged = {};\n\ninputData.forEach(obj => {\n  Object.entries(obj).forEach(([key, value]) => {\n    // If the key already exists, add a suffix to keep all values\n    let newKey = key;\n    let i = 2;\n    while (merged.hasOwnProperty(newKey)) {\n      newKey = `${key}_${i++}`;\n    }\n    merged[newKey] = value;\n  });\n});\n\n// Add a uniqueKey property\nmerged.uniqueKey = \"key_\" + Date.now();\n\n// Wrap the merged object under a single key\nconst output = {\n  allData: merged\n};\n\n// Return as an array of one object with a 'json' property\nreturn [{ json: output }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        -655
+      ],
+      "id": "850fff0f-1672-4914-a49c-cfa9369dc9dc",
+      "name": "Code9",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2560,
+        -655
+      ],
+      "id": "19945943-b40c-44dd-9b9d-618934acb9b8",
+      "name": "Merge4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        0,
+        -655
+      ],
+      "id": "95d6b375-cf59-4f2e-b14e-eb4c4d8cf726",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "function rename(arr) {\n  return arr.map(item => ({\n    ...item,\n    clientName: item.name,\n    emailAddress: item.email\n  }))\n  .map(({ name, email, ...rest }) => rest);\n}\n\nconst input = $input.all();\nconst output = rename(input.map(item => item.json));\nreturn output.map(obj => ({ json: obj }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -455
+      ],
+      "id": "62a33b57-e984-44ec-9e6d-3fbd52c87443",
+      "name": "changing name and email of client"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  const rawOutput = String(item.json.output || '');\n  let subject = null;\n  let body = null;\n  let error = null;\n\n  // Step 1: Clean formatting to prepare for parse or extraction\n  let cleaned = rawOutput\n    .trim()\n    .replace(/^\\s*\"(.*)\"\\s*$/, '$1') // remove outer quotes if present\n    .replace(/\\\\\"/g, '\"')            // unescape double quotes\n    .replace(/\\\\n/g, '\\n');          // convert escaped newlines\n\n  // Step 2: Try JSON parsing\n  try {\n    const parsed = JSON.parse(cleaned);\n    subject = parsed.subject || null;\n    body = parsed.body || null;\n  } catch (err) {\n    // Step 3: If parsing fails, extract using regex\n    try {\n      const subjectMatch = cleaned.match(/\"subject\"\\s*:\\s*\"([^\"]+)\"/);\n      const bodyMatch = cleaned.match(/\"body\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"/);\n\n      if (subjectMatch) {\n        subject = subjectMatch[1];\n      }\n\n      if (bodyMatch) {\n        body = bodyMatch[1]\n          .replace(/\\\\n/g, '\\n')\n          .replace(/\\\\\"/g, '\"');\n      }\n\n      if (!subject || !body) {\n        error = 'Parsed with regex, but one or more fields missing.';\n      }\n    } catch (regexErr) {\n      error = `Regex fallback error: ${regexErr.message}`;\n    }\n  }\n\n  item.json.subject = subject;\n  item.json.body = body;\n  item.json.extractError = error;\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        -905
+      ],
+      "id": "4ae9442e-abb2-48ab-870f-065c76a5e218",
+      "name": "extracting the suject and body"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst updatedItems = items.map((item) => {\n  const subject = item?.json?.subject || \"\";\n  const body = item?.json?.body || \"\";\n  const html = `\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\" />\n  <title>${subject}</title>\n  <style>\n    :root {\n      --primary: #6366f1;\n      --primary-dark: #4338ca;\n      --primary-light: #a5b4fc;\n      --secondary: #f43f5e;\n      --secondary-light: #fda4af;\n      --bg-gradient: linear-gradient(135deg, #fdf2f8, #e0f2fe);\n      --card-gradient: linear-gradient(120deg, #e0e7ff, #f0f9ff);\n      --text-main: #1e293b;\n      --text-light: #475569;\n      --radius: 20px;\n      --shadow: 0 6px 40px rgba(30, 64, 175, 0.15);\n    }\n\n    html, body {\n      height: 100%;\n      margin: 0;\n      padding: 0;\n      font-family: 'Segoe UI', 'Roboto', sans-serif;\n      background: var(--bg-gradient);\n      color: var(--text-main);\n    }\n\n    body {\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      min-height: 100vh;\n    }\n\n    .main-grid {\n      background: var(--card-gradient);\n      border-radius: var(--radius);\n      box-shadow: var(--shadow);\n      padding: 48px 36px;\n      width: 100%;\n      max-width: 680px;\n      margin: 24px;\n      box-sizing: border-box;\n      border: 3px solid var(--primary);\n      transition: all 0.3s ease-in-out;\n    }\n\n    .main-grid:hover {\n      box-shadow: 0 12px 50px rgba(99, 102, 241, 0.25);\n      transform: scale(1.01);\n    }\n\n    .subject {\n      color:lightblue;\n      font-size: 2.5em;\n      font-weight: 800;\n      text-align: center;\n      background: linear-gradient(90deg, var(--primary-dark), var(--primary-light));\n      -webkit-background-clip: text;\n      -webkit-text-fill-color: transparent;\n      text-fill-color: transparent;\n      background-clip: text;\n      position: relative;\n    }\n\n    .subject::after {\n      content: \"\";\n      display: block;\n      width: 60px;\n      height: 5px;\n      border-radius: 2px;\n      background: linear-gradient(to right, var(--primary), var(--secondary));\n      margin: 20px auto 10px;\n    }\n\n    .body-content {\n      font-size: 1.2em;\n      color: var(--text-light);\n      white-space: pre-line;\n      line-height: 1.7;\n      padding-top: 20px;\n    }\n\n    @media (max-width: 700px) {\n      .main-grid {\n        padding: 24px 16px;\n      }\n\n      .subject {\n        font-size: 1.7em;\n      }\n\n      .subject::after {\n        width: 40px;\n        height: 4px;\n      }\n\n      .body-content {\n        font-size: 1em;\n      }\n    }\n  </style>\n</head>\n<body>\n  <main class=\"main-grid\" tabindex=\"0\" aria-label=\"Content\">\n    <header>\n      <h1 class=\"subject\">${subject}</h1>\n    </header>\n    <section class=\"body-content\">${body}</section>\n  </main>\n</body>\n</html>\n`;\n  return { ...item.json, html };\n});\n\nreturn updatedItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        -905
+      ],
+      "id": "c134ba34-3648-4d4b-9e90-84768d8b21d4",
+      "name": "html file"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -655
+      ],
+      "id": "8d5228cb-b0aa-42ae-b359-6fb872017840"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "10Ole7R4ACzw9pRPH-7HJsX7D1V3-ltYnbMDp8FfY1KA",
+          "mode": "list",
+          "cachedResultName": "Festival -wishes-automation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10Ole7R4ACzw9pRPH-7HJsX7D1V3-ltYnbMDp8FfY1KA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10Ole7R4ACzw9pRPH-7HJsX7D1V3-ltYnbMDp8FfY1KA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        220,
+        -980
+      ],
+      "id": "d0659c9b-f1ee-415a-a737-5f219458244d",
+      "name": "Get row(s) in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PiPXgtjfXU0dWqxG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node code\n\n// Get today's date in the same format as your input (\"11 July 2025\")\nconst today = new Date();\nconst options = { day: '2-digit', month: 'long', year: 'numeric' };\nconst todayFormatted = today.toLocaleDateString('en-GB', options);\n\n// Filter items where the Date matches today\nreturn items.filter(item => item.json.Date === todayFormatted);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -980
+      ],
+      "id": "ee8d11f5-d353-4ade-96d7-3fade75815d9",
+      "name": "Code7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://unread-emails.onrender.com/send-email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sender",
+              "value": "={{ $json.allData.client_email }}"
+            },
+            {
+              "name": "password",
+              "value": "={{ $json.allData.password }}"
+            },
+            {
+              "name": "recipient",
+              "value": "={{ $json.allData.email }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.allData.email }}"
+            },
+            {
+              "name": "html",
+              "value": "={{ $json.allData.html }}"
+            },
+            {
+              "name": "smtp_host",
+              "value": "smtp.gmail.com"
+            },
+            {
+              "name": "smtp_port",
+              "value": "587"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        -805
+      ],
+      "id": "ba68b97c-32e6-45f1-8374-685e1e3724ac",
+      "name": "gmail_SMTP2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3542880-8071-4fb9-8eeb-45ee5bdbac58",
+              "leftValue": "={{ $json.festive_status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "33dd1592-235e-4604-aced-7201379a8c36",
+              "leftValue": "={{ $json.festive_status }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        -655
+      ],
+      "id": "0571915a-4190-4a6f-8f05-e8327710b243",
+      "name": "Filter",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4b6a7fb9-8bf5-440d-91a8-1ff3076ee906",
+              "leftValue": "={{ $json.Festival }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -660,
+        -655
+      ],
+      "id": "a166a98f-ed89-4ad7-bd19-174bbfb3fba3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.all().map(item => item.json);\n\n// Step 1: Extract formattedDate from the object that contains it\nconst formattedEntry = inputData.find(obj => obj.formattedDate);\nconst formattedDate = formattedEntry?.formattedDate;\n\n// Step 2: Filter records where Date === formattedDate\nconst matched = inputData.filter(obj => obj.Date === formattedDate);\n\n// Step 3: Return array of objects (each as separate item for n8n output)\nreturn matched.map(item => ({ json: item }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        -655
+      ],
+      "id": "586dcdbf-d7ab-4f68-ab14-5ea86becfaba",
+      "name": "Code",
+      "alwaysOutputData": false,
+      "executeOnce": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "changing name and email of client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "extracting the suject and body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "gmail_SMTP2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code9": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "Code9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Replace Me",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "changing name and email of client": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "extracting the suject and body": {
+      "main": [
+        [
+          {
+            "node": "html file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "html file": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Code7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code7": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "gmail_SMTP2": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "351284df-ce03-4dd9-950b-84f47148c6a7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c3338e188bd19de946fcc3af4a335c072f7d2c7e8bdaab2c44eab0d8473046dc"
+  },
+  "id": "Yi7XchDDLZHQLpLD",
+  "tags": []
+}
